@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora PAU</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBFBF6;
+  --grid:rgba(60,120,175,.20);
+  --grid-strong:rgba(60,120,175,.34);
+  --ink:#16293B;
+  --ink-soft:#5E7285;
+  --pen:#2B5EA8;
+  --pen-wash:rgba(43,94,168,.09);
+  --red:#C2362C;
+  --red-wash:rgba(194,54,44,.10);
+  --rule:rgba(22,41,59,.18);
+  --field:#FFFFFF;
+
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#111A22;
+    --grid:rgba(120,175,225,.13);
+    --grid-strong:rgba(120,175,225,.22);
+    --ink:#E6EDF3;
+    --ink-soft:#93A6B6;
+    --pen:#7FB0F0;
+    --pen-wash:rgba(127,176,240,.12);
+    --red:#F0776B;
+    --red-wash:rgba(240,119,107,.13);
+    --rule:rgba(230,237,243,.20);
+    --field:#18242E;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111A22; --grid:rgba(120,175,225,.13); --grid-strong:rgba(120,175,225,.22);
+  --ink:#E6EDF3; --ink-soft:#93A6B6; --pen:#7FB0F0; --pen-wash:rgba(127,176,240,.12);
+  --red:#F0776B; --red-wash:rgba(240,119,107,.13); --rule:rgba(230,237,243,.20);
+  --field:#18242E; color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  background-color:var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid) 1px,transparent 1px),
+    linear-gradient(var(--grid-strong) 1px,transparent 1px),
+    linear-gradient(90deg,var(--grid-strong) 1px,transparent 1px);
+  background-size:22px 22px,22px 22px,110px 110px,110px 110px;
+  background-position:-1px -1px;
+  color:var(--ink);
+  font-family:"Instrument Sans",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:16px;
+  line-height:1.55;
+}
+.wrap{max-width:730px;margin:0 auto;padding:26px 20px 132px}
+@media (min-width:860px){
+  .wrap{padding-left:46px;border-left:1px solid var(--red-wash);box-shadow:inset 1px 0 0 var(--red)}
+}
+
+/* ---- cabecera y logo ---- */
+.top{display:flex;align-items:center;gap:13px;margin-bottom:34px}
+.mark{flex:none;display:block}
+.wordmark{font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-weight:800;font-size:clamp(1.22rem,5.4vw,1.5rem);letter-spacing:-.025em;line-height:1;margin:0}
+.tagline{margin:3px 0 0;font-size:.82rem;color:var(--ink-soft);line-height:1.3}
+.theme-btn{margin-left:auto;background:none;border:1px solid var(--rule);color:var(--ink-soft);border-radius:999px;padding:6px 12px;font:inherit;font-size:.76rem;cursor:pointer}
+.theme-btn:hover{color:var(--ink);border-color:var(--ink-soft)}
+
+/* ---- panel de resultado ---- */
+.result{margin:0 0 40px}
+.figures{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 34px}
+.fig-main{display:flex;align-items:baseline;gap:9px}
+.big{font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-weight:800;font-variant-numeric:tabular-nums;font-size:clamp(3.6rem,15vw,5.4rem);line-height:.86;letter-spacing:-.045em;color:var(--pen)}
+.big-unit{font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:1.15rem;color:var(--ink-soft);letter-spacing:-.01em}
+.fig-side{padding-bottom:5px}
+.fig-side b{display:block;font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-variant-numeric:tabular-nums;font-size:1.65rem;line-height:1.1;letter-spacing:-.02em}
+.fig-side span{font-size:.8rem;color:var(--ink-soft)}
+.fig-label{margin:6px 0 0;font-size:.88rem;color:var(--ink-soft)}
+
+/* ---- regla 5 → 14 ---- */
+.ruler{margin-top:26px;position:relative}
+.ruler-track{position:relative;height:42px;border:1px solid var(--rule);border-radius:3px;background:var(--field);overflow:hidden}
+.ruler-fill{position:absolute;inset:0 auto 0 0;background:var(--pen-wash);border-right:2px solid var(--pen);width:0;transition:width .22s ease}
+.ruler-tick{position:absolute;top:0;bottom:0;width:1px;background:var(--rule)}
+.ruler-tick.major{background:var(--rule);top:0;bottom:16px}
+.ruler-cut{position:absolute;top:-7px;bottom:-7px;width:2px;background:var(--red);display:none}
+.ruler-cut::after{content:attr(data-v);position:absolute;top:-19px;left:50%;transform:translateX(-50%);font-size:.7rem;font-weight:600;color:var(--red);background:var(--paper);padding:0 4px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.ruler-scale{position:relative;height:17px;margin-top:5px}
+.ruler-num{position:absolute;transform:translateX(-50%);font-size:.7rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.verdict{margin:16px 0 0;font-size:.95rem;line-height:1.5;padding-left:13px;border-left:3px solid var(--rule)}
+.verdict.ok{border-color:var(--pen)}
+.verdict.no{border-color:var(--red);color:var(--red)}
+
+/* ---- bloques ---- */
+section{margin:0 0 38px}
+.head{display:flex;align-items:center;gap:11px;margin:0 0 4px}
+.step{flex:none;width:25px;height:25px;border:1.5px solid var(--ink);border-radius:50%;display:grid;place-items:center;font-size:.8rem;font-weight:600;font-variant-numeric:tabular-nums}
+h2{font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-weight:600;font-size:1.22rem;letter-spacing:-.02em;margin:0;padding-bottom:2px;border-bottom:2px solid var(--ink);line-height:1.25}
+.note{margin:0 0 17px 36px;font-size:.84rem;color:var(--ink-soft);max-width:60ch}
+.rows{margin-left:36px;display:flex;flex-direction:column;gap:9px}
+@media (max-width:560px){.rows,.note{margin-left:0}}
+.row{display:flex;align-items:center;gap:12px}
+.row label{flex:1 1 auto;min-width:0;font-size:.95rem}
+input[type=number]{
+  flex:none;width:82px;padding:7px 9px;text-align:center;
+  font:inherit;font-weight:600;font-variant-numeric:tabular-nums;
+  color:var(--ink);background:var(--field);
+  border:1.5px solid var(--rule);border-radius:3px;
+}
+input[type=number]:hover{border-color:var(--ink-soft)}
+input[type=number]:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--pen);outline-offset:2px}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+input[type=number]{-moz-appearance:textfield}
+select{
+  flex:none;padding:7px 8px;font:inherit;font-size:.86rem;color:var(--ink);
+  background:var(--field);border:1.5px solid var(--rule);border-radius:3px;
+}
+.row .name{flex:1 1 auto;min-width:0;background:transparent;border:none;border-bottom:1.5px solid var(--rule);border-radius:0;padding:6px 2px;font:inherit;font-size:.95rem;color:var(--ink);width:100%;text-align:left;font-weight:400}
+.row .name:hover{border-bottom-color:var(--ink-soft)}
+.row .name:focus-visible{outline:none;border-bottom-color:var(--pen);border-bottom-width:2px}
+.counts{flex:none;width:58px;font-size:.72rem;color:var(--pen);text-align:right;font-weight:600}
+.counts:empty{visibility:hidden}
+.avg{margin:14px 0 0 36px;font-size:.92rem;color:var(--ink-soft)}
+.avg b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.avg{margin-left:0}}
+
+/* ---- gráfico ---- */
+.chart-wrap{margin-left:36px;overflow-x:auto}
+@media (max-width:560px){.chart-wrap{margin-left:0}}
+svg.chart{display:block;width:100%;min-width:300px;height:auto}
+.empty{margin-left:36px;padding:17px;border:1.5px dashed var(--rule);border-radius:4px;font-size:.9rem;color:var(--ink-soft);background:var(--pen-wash)}
+@media (max-width:560px){.empty{margin-left:0}}
+.years{margin:16px 0 0 36px;display:flex;flex-wrap:wrap;gap:9px}
+@media (max-width:560px){.years{margin-left:0}}
+.year{display:flex;flex-direction:column;gap:3px;width:78px}
+.year span{font-size:.72rem;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.year input{width:100%}
+.reset{margin-top:26px;background:none;border:1.5px solid var(--rule);color:var(--ink-soft);padding:8px 15px;border-radius:3px;font:inherit;font-size:.86rem;cursor:pointer}
+.reset:hover{border-color:var(--red);color:var(--red)}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);font-size:.78rem;color:var(--ink-soft);max-width:62ch}
+
+/* ---- barra móvil ---- */
+.bar{
+  position:fixed;left:0;right:0;bottom:0;display:none;
+  align-items:center;justify-content:space-between;gap:16px;
+  padding:11px 20px;padding-bottom:calc(11px + env(safe-area-inset-bottom,0px));
+  background:var(--paper);border-top:1.5px solid var(--ink);
+}
+.bar b{font-family:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;font-weight:800;font-size:1.5rem;font-variant-numeric:tabular-nums;color:var(--pen);letter-spacing:-.03em}
+.bar span{font-size:.78rem;color:var(--ink-soft)}
+@media (max-width:759px){.bar{display:flex}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="top">
+    <svg class="mark" width="42" height="42" viewBox="0 0 42 42" role="img" aria-label="Calculadora PAU">
+      <rect x="1.4" y="1.4" width="39.2" height="39.2" rx="7" fill="none" stroke="var(--ink)" stroke-width="2.2"/>
+      <rect x="9" y="24" width="5.4" height="9" fill="var(--pen)"/>
+      <rect x="18.3" y="18" width="5.4" height="15" fill="var(--pen)"/>
+      <rect x="27.6" y="10" width="5.4" height="23" fill="var(--pen)"/>
+      <path d="M6 15.5 H36" stroke="var(--red)" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="5 3.6"/>
+    </svg>
+    <div>
+      <h1 class="wordmark">Calculadora PAU</h1>
+      <p class="tagline">De 5 a 14, con tus ponderaciones</p>
+    </div>
+    <button class="theme-btn" id="theme" type="button">Cambiar tema</button>
+  </div>
+
+  <div class="result">
+    <div class="figures">
+      <div>
+        <div class="fig-main">
+          <span class="big" id="adm">—</span>
+          <span class="big-unit">/ 14</span>
+        </div>
+        <p class="fig-label">Nota de admisión a la carrera</p>
+      </div>
+      <div class="fig-side">
+        <b id="acc">—</b>
+        <span>Nota de acceso (de 5 a 10)</span>
+      </div>
+    </div>
+
+    <div class="ruler">
+      <div class="ruler-track" id="track">
+        <div class="ruler-fill" id="fill"></div>
+        <div class="ruler-cut" id="cut"></div>
+      </div>
+      <div class="ruler-scale" id="scale"></div>
+    </div>
+
+    <p class="verdict" id="verdict">Rellena tus notas abajo y la regla se irá moviendo.</p>
+  </div>
+
+  <section>
+    <div class="head"><span class="step">1</span><h2>Bachillerato</h2></div>
+    <p class="note">La media de los dos cursos pesa un 60 % de la nota de acceso.</p>
+    <div class="rows">
+      <div class="row"><label for="b1">Nota media de 1.º</label><input type="number" id="b1" min="0" max="10" step="0.01" inputmode="decimal" placeholder="0–10"></div>
+      <div class="row"><label for="b2">Nota media de 2.º</label><input type="number" id="b2" min="0" max="10" step="0.01" inputmode="decimal" placeholder="0–10"></div>
+    </div>
+    <p class="avg">Media de Bachillerato: <b id="mb">—</b></p>
+  </section>
+
+  <section>
+    <div class="head"><span class="step">2</span><h2>Fase de acceso</h2></div>
+    <p class="note">Los cuatro exámenes obligatorios. Su media pesa el 40 % restante, y tiene que llegar a 4 para que la nota de acceso valga. Puedes cambiar los nombres si en tu comunidad se llaman de otra forma.</p>
+    <div class="rows" id="exams"></div>
+    <p class="avg">Media de la fase de acceso: <b id="fa">—</b></p>
+  </section>
+
+  <section>
+    <div class="head"><span class="step">3</span><h2>Optativas que suben nota</h2></div>
+    <p class="note">Apunta cada materia con la ponderación que le da tu carrera: 0,2 si sube el doble, 0,1 si sube la mitad. Solo se cuentan las dos que más te sumen, y hace falta un 5 para que puntúen.</p>
+    <div class="rows" id="opts"></div>
+  </section>
+
+  <section>
+    <div class="head"><span class="step">4</span><h2>La nota de corte de tu carrera</h2></div>
+    <p class="note">Escribe la nota de corte del año pasado y las de los cursos anteriores que encuentres. Los datos los pones tú: cada universidad publica los suyos.</p>
+    <div class="rows">
+      <div class="row"><label for="corte">Nota de corte del curso pasado</label><input type="number" id="corte" min="5" max="14" step="0.001" inputmode="decimal" placeholder="5–14"></div>
+    </div>
+    <div class="years" id="years"></div>
+    <div id="chartHost" style="margin-top:24px"></div>
+    <button class="reset" id="reset" type="button">Borrar todo</button>
+  </section>
+
+  <footer>
+    Esta calculadora usa con la fórmula general: 60 % de la media de Bachillerato más 40 % de la fase de acceso, y encima las dos mejores optativas ponderadas. Cada comunidad y cada universidad tienen sus matices, así que contrasta el resultado con la web oficial de tu universidad antes de decidir nada. Tus datos se quedan guardados en este navegador y no salen de él.
+  </footer>
+</div>
+
+<div class="bar">
+  <span>Nota de admisión</span>
+  <b id="barAdm">—</b>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var KEY="catorce.v1";
+  var EXAMS=["Lengua castellana y literatura","Historia de España o Filosofía","Lengua extranjera","Materia de modalidad"];
+  var YEAR=new Date().getFullYear();
+  var YEARS=[YEAR-5,YEAR-4,YEAR-3,YEAR-2,YEAR-1];
+
+  var S={b1:"",b2:"",exams:[],opts:[],corte:"",hist:{}};
+  EXAMS.forEach(function(n){S.exams.push({name:n,v:""});});
+  for(var i=0;i<5;i++)S.opts.push({name:"",v:"",p:"0.2"});
+
+  try{
+    var raw=localStorage.getItem(KEY);
+    if(raw){var p=JSON.parse(raw);
+      if(p&&typeof p==="object"){
+        S.b1=p.b1||"";S.b2=p.b2||"";S.corte=p.corte||"";S.hist=p.hist||{};
+        if(Array.isArray(p.exams))p.exams.forEach(function(e,i){if(S.exams[i]&&e){S.exams[i].name=e.name||S.exams[i].name;S.exams[i].v=e.v||"";}});
+        if(Array.isArray(p.opts))p.opts.forEach(function(e,i){if(S.opts[i]&&e){S.opts[i].name=e.name||"";S.opts[i].v=e.v||"";S.opts[i].p=e.p||"0.2";}});
+      }}
+  }catch(e){}
+
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){}}
+  function num(x){var n=parseFloat(String(x).replace(",","."));return isFinite(n)?n:null;}
+  function clamp(n,a,b){return Math.max(a,Math.min(b,n));}
+  function fmt(n,d){return n.toLocaleString("es-ES",{minimumFractionDigits:d,maximumFractionDigits:d});}
+
+  var $=function(id){return document.getElementById(id);};
+
+  // --- construir filas de exámenes ---
+  var exHost=$("exams");
+  S.exams.forEach(function(ex,i){
+    var row=document.createElement("div");row.className="row";
+    var name=document.createElement("input");
+    name.type="text";name.className="name";name.value=ex.name;name.setAttribute("aria-label","Nombre del examen "+(i+1));
+    var v=document.createElement("input");
+    v.type="number";v.min=0;v.max=10;v.step=.01;v.inputMode="decimal";v.placeholder="0–10";v.value=ex.v;
+    v.setAttribute("aria-label","Nota de "+ex.name);
+    name.oninput=function(){ex.name=name.value;v.setAttribute("aria-label","Nota de "+name.value);save();};
+    v.oninput=function(){ex.v=v.value;render();};
+    row.appendChild(name);row.appendChild(v);exHost.appendChild(row);
+  });
+
+  // --- construir filas de optativas ---
+  var opHost=$("opts");
+  S.opts.forEach(function(op,i){
+    var row=document.createElement("div");row.className="row";
+    var name=document.createElement("input");
+    name.type="text";name.className="name";name.placeholder="Materia "+(i+1);name.value=op.name;
+    name.setAttribute("aria-label","Nombre de la optativa "+(i+1));
+    var sel=document.createElement("select");sel.setAttribute("aria-label","Ponderación de la optativa "+(i+1));
+    [["0.2","×0,2"],["0.1","×0,1"]].forEach(function(o){
+      var opt=document.createElement("option");opt.value=o[0];opt.textContent=o[1];sel.appendChild(opt);});
+    sel.value=op.p;
+    var v=document.createElement("input");
+    v.type="number";v.min=0;v.max=10;v.step=.01;v.inputMode="decimal";v.placeholder="0–10";v.value=op.v;
+    v.setAttribute("aria-label","Nota de la optativa "+(i+1));
+    var tag=document.createElement("span");tag.className="counts";op.tag=tag;
+    name.oninput=function(){op.name=name.value;save();};
+    sel.onchange=function(){op.p=sel.value;render();};
+    v.oninput=function(){op.v=v.value;render();};
+    row.appendChild(name);row.appendChild(sel);row.appendChild(v);row.appendChild(tag);
+    opHost.appendChild(row);
+  });
+
+  // --- años del histórico ---
+  var yHost=$("years");
+  YEARS.forEach(function(y){
+    var box=document.createElement("div");box.className="year";
+    var lab=document.createElement("span");lab.textContent=y;
+    var v=document.createElement("input");
+    v.type="number";v.min=5;v.max=14;v.step=.001;v.inputMode="decimal";v.placeholder="—";
+    v.value=S.hist[y]||"";v.setAttribute("aria-label","Nota de corte de "+y);
+    v.oninput=function(){S.hist[y]=v.value;render();};
+    box.appendChild(lab);box.appendChild(v);yHost.appendChild(box);
+  });
+
+  // --- escala de la regla ---
+  var scale=$("scale"),track=$("track");
+  for(var g=5;g<=14;g++){
+    var pct=(g-5)/9*100;
+    var t=document.createElement("div");t.className="ruler-tick"+(g%1===0?" major":"");
+    t.style.left=pct+"%";track.appendChild(t);
+    var n=document.createElement("div");n.className="ruler-num";n.style.left=pct+"%";n.textContent=g;scale.appendChild(n);
+  }
+
+  $("b1").value=S.b1;$("b2").value=S.b2;$("corte").value=S.corte;
+  $("b1").oninput=function(){S.b1=this.value;render();};
+  $("b2").oninput=function(){S.b2=this.value;render();};
+  $("corte").oninput=function(){S.corte=this.value;render();};
+
+  $("theme").onclick=function(){
+    var cur=document.documentElement.getAttribute("data-theme");
+    var dark=window.matchMedia("(prefers-color-scheme:dark)").matches;
+    var now=cur?cur:(dark?"dark":"light");
+    document.documentElement.setAttribute("data-theme",now==="dark"?"light":"dark");
+  };
+
+  $("reset").onclick=function(){
+    try{localStorage.removeItem(KEY);}catch(e){}
+    location.reload();
+  };
+
+  function chart(pts,mine){
+    var host=$("chartHost");host.innerHTML="";
+    if(pts.length<2){
+      var e=document.createElement("div");e.className="empty";
+      e.textContent="Escribe la nota de corte de al menos dos años y aquí verás si tu carrera sube o baja.";
+      host.appendChild(e);return;
+    }
+    var W=660,H=240,L=38,R=14,T=18,B=30;
+    var vals=pts.map(function(p){return p.v;});
+    if(mine!==null)vals.push(mine);
+    var lo=Math.floor(Math.min.apply(null,vals)*2)/2-.25;
+    var hi=Math.ceil(Math.max.apply(null,vals)*2)/2+.25;
+    if(hi-lo<1){hi=lo+1;}
+    var x=function(i){return L+i*(W-L-R)/(pts.length-1);};
+    var y=function(v){return T+(hi-v)/(hi-lo)*(H-T-B);};
+    var s='<svg class="chart" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Evolución de la nota de corte">';
+    for(var k=0;k<=4;k++){
+      var vv=lo+(hi-lo)*k/4,yy=y(vv);
+      s+='<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+'" stroke="var(--rule)" stroke-width="1"/>';
+      s+='<text x="'+(L-8)+'" y="'+(yy+4)+'" text-anchor="end" font-size="11" fill="var(--ink-soft)" font-family="Instrument Sans,sans-serif">'+fmt(vv,1)+'</text>';
+    }
+    if(mine!==null&&mine>=lo&&mine<=hi){
+      s+='<line x1="'+L+'" y1="'+y(mine)+'" x2="'+(W-R)+'" y2="'+y(mine)+'" stroke="var(--pen)" stroke-width="2" stroke-dasharray="6 4"/>';
+      s+='<text x="'+(W-R)+'" y="'+(y(mine)-7)+'" text-anchor="end" font-size="11" font-weight="600" fill="var(--pen)" font-family="Instrument Sans,sans-serif">tu nota</text>';
+    }
+    var d=pts.map(function(p,i){return (i?"L":"M")+x(i)+" "+y(p.v);}).join(" ");
+    s+='<path d="'+d+'" fill="none" stroke="var(--red)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
+    pts.forEach(function(p,i){
+      s+='<circle cx="'+x(i)+'" cy="'+y(p.v)+'" r="4" fill="var(--paper)" stroke="var(--red)" stroke-width="2.4"/>';
+      s+='<text x="'+x(i)+'" y="'+(H-9)+'" text-anchor="middle" font-size="11" fill="var(--ink-soft)" font-family="Instrument Sans,sans-serif">'+p.y+'</text>';
+    });
+    s+='</svg>';
+    host.innerHTML=s;
+  }
+
+  function render(){
+    var b1=num(S.b1),b2=num(S.b2);
+    var mb=(b1!==null&&b2!==null)?(b1+b2)/2:(b1!==null?b1:(b2!==null?b2:null));
+    $("mb").textContent=mb!==null?fmt(clamp(mb,0,10),3):"—";
+
+    var got=[],miss=false;
+    S.exams.forEach(function(e){var n=num(e.v);if(n===null)miss=true;else got.push(clamp(n,0,10));});
+    var fa=got.length?got.reduce(function(a,b){return a+b;},0)/got.length:null;
+    $("fa").textContent=(fa!==null&&!miss)?fmt(fa,3):(fa!==null?fmt(fa,3)+" (faltan exámenes)":"—");
+
+    var ready=(mb!==null&&fa!==null&&!miss);
+    var acc=ready?0.6*clamp(mb,0,10)+0.4*fa:null;
+
+    var pool=[];
+    S.opts.forEach(function(o){
+      var n=num(o.v);o.pts=(n!==null&&n>=5)?n*parseFloat(o.p):0;
+      if(o.pts>0)pool.push(o);
+    });
+    pool.sort(function(a,b){return b.pts-a.pts;});
+    S.opts.forEach(function(o){
+      var idx=pool.indexOf(o);
+      o.tag.textContent=(idx===0||idx===1)?"+"+fmt(o.pts,2):"";
+    });
+    var bonus=pool.slice(0,2).reduce(function(a,o){return a+o.pts;},0);
+    var adm=acc!==null?Math.min(14,acc+bonus):null;
+
+    $("acc").textContent=acc!==null?fmt(acc,3):"—";
+    $("adm").textContent=adm!==null?fmt(adm,3):"—";
+    $("barAdm").textContent=adm!==null?fmt(adm,3):"—";
+
+    var pctv=adm!==null?clamp((adm-5)/9*100,0,100):0;
+    $("fill").style.width=pctv+"%";
+
+    var corte=num(S.corte),cutEl=$("cut");
+    if(corte!==null&&corte>=5&&corte<=14){
+      cutEl.style.display="block";
+      cutEl.style.left=((corte-5)/9*100)+"%";
+      cutEl.setAttribute("data-v","corte "+fmt(corte,3));
+    }else cutEl.style.display="none";
+
+    var v=$("verdict");v.className="verdict";
+    if(!ready){
+      v.textContent=mb===null?"Empieza por tus notas de Bachillerato.":"Te faltan notas de la fase de acceso para tener el cálculo completo.";
+    }else if(fa<4){
+      v.className="verdict no";
+      v.textContent="La media de la fase de acceso es "+fmt(fa,3)+" y hay que llegar a 4 para aprobar la PAU. Con este resultado no hay nota de acceso.";
+    }else if(acc<5){
+      v.className="verdict no";
+      v.textContent="La nota de acceso se queda en "+fmt(acc,3)+" y hace falta un 5. Subir la media de Bachillerato es lo que más pesa aquí.";
+    }else if(corte===null){
+      v.className="verdict ok";
+      v.textContent="Entras a la universidad con "+fmt(acc,3)+" y compites por plaza con "+fmt(adm,3)+". Pon la nota de corte de tu carrera para ver si te llega.";
+    }else if(adm>=corte){
+      v.className="verdict ok";
+      v.textContent="Te sobran "+fmt(adm-corte,3)+" puntos sobre la nota de corte del año pasado. Ojo: la de este año puede subir.";
+    }else{
+      var falta=corte-adm;
+      v.className="verdict no";
+      v.textContent="Te faltan "+fmt(falta,3)+" puntos para la nota de corte del año pasado."+(bonus<4?" Una optativa más con ponderación 0,2 puede darte hasta 2 puntos.":"");
+    }
+
+    var pts=[];
+    YEARS.forEach(function(yv){
+      var n=num(S.hist[yv]);
+      if(n!==null&&n>=5&&n<=14)pts.push({y:yv,v:n});
+    });
+    chart(pts,adm);
+    save();
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
